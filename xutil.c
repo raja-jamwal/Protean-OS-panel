@@ -33,24 +33,14 @@ set_strut 	 (GdkWindow        *gdk_window,
   atom_window_type = gdk_x11_get_xatom_by_name ("_NET_WM_WINDOW_TYPE");
   atom_type[0] = gdk_x11_get_xatom_by_name ("_NET_WM_WINDOW_TYPE_DOCK");
 
-  XChangeProperty (display,
-                   window,
-                   atom_window_type,
-                   XA_ATOM, 32, PropModeReplace,
-                   (guchar *) &atom_type, 1);
+  XChangeProperty(display, window,
+    		  atom_window_type,
+    		  XA_ATOM, 32, PropModeReplace,
+    		  (unsigned char *) &atom_type, 1);
 
-  XChangeProperty (display, window, net_wm_strut,
-                   XA_CARDINAL, 32, PropModeReplace,
-                   (guchar *) &struts, 4);
-  XChangeProperty (display, window, net_wm_strut_partial,
+   XChangeProperty (display, window, net_wm_strut_partial,
                    XA_CARDINAL, 32, PropModeReplace,
                    (guchar *) &struts, 12);
-
-  XChangeProperty(display, window,
-    		  XInternAtom(display, "_NET_WM_WINDOW_TYPE", False),
-    		  XA_ATOM, 32, PropModeReplace,
-    		  (unsigned char *) &net_wm_window_type, 1);
-
   
   gdk_error_trap_pop ();
 }

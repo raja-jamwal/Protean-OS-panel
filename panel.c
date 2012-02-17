@@ -50,7 +50,7 @@ init_window(void)
  //gtk_widget_set_double_buffered( GTK_WIDGET(window), FALSE );
  /* we'll draw the background of the main window */
 
- gtk_widget_set_app_paintable(window, TRUE);
+ //-----gtk_widget_set_app_paintable(window, TRUE);
 
  /* needed for some instance, this create the DC for painting explicitly*/
  //gtk_widget_realize (GTK_WIDGET(window));
@@ -72,7 +72,7 @@ setup_panel(void)
  
  // logo
  GtkWidget * label = gtk_label_new (NULL);
- gtk_label_set_markup (GTK_LABEL (label), "<span font=\"arial\" font_weight=\"bold\" font_size=\"18500\" foreground=\"white\">ProteanOS</span>");
+ gtk_label_set_markup (GTK_LABEL (label), "<span font=\"arial\" font_weight=\"bold\" font_size=\"18500\" foreground=\"grey\">MeeGo</span>");
 
  // task manager
 

@@ -7,12 +7,13 @@
 #include <X11/Xatom.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+
 #include <cairo.h>
 
 #ifndef _H_PROTEAN_BAR_H
 #define _H_PROTEAN_BAR_H
 
-#define BAR_HEIGHT 		40
+#define BAR_HEIGHT 		30
 #define STRUT_TOP 		2
 #define STRUT_TOP_START 	8
 #define STRUT_TOP_END 		9
