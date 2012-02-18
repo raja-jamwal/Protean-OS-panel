@@ -4,6 +4,7 @@
 struct APPLETS apps[] = {
 {NULL, clock_init, APPLET_TYPE_TRAY}
 //,{NULL, home_init, APPLET_TYPE_TASK} // dummy home app to show APPLET_TYPE_TASK applet type
+,{NULL, window_manager_init, APPLET_TYPE_TASK}
 };
 
 void 

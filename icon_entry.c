@@ -107,7 +107,7 @@ GtkWidget * enum_icons(void){
 		icons[i].image_widget = image;
 		icons[i].saturation = 1.0;
 
-		g_signal_connect(image, "expose-event", G_CALLBACK(draw_icons), (gpointer)&icons[i]);
+		//----g_signal_connect(image, "expose-event", G_CALLBACK(draw_icons), (gpointer)&icons[i]);
 		
     		event_box = gtk_event_box_new ();
 

@@ -28,6 +28,8 @@
 
 #define MAX_PATH		1024
 
+#define WINDOW_NAME_LENGTH	20
+
 // clock.c
 
 GtkWidget * 
@@ -41,6 +43,11 @@ home_init ();
 void applet_background (cairo_t *cr, 
 			unsigned int width, 
 			unsigned int height);
+
+// window_manager.c
+
+GtkWidget *
+window_manager_init ();
 
 // common declarations
 
