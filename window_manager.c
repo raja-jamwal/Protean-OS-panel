@@ -9,14 +9,17 @@ typedef struct WINDOW_META{
 
 	struct win_meta *next;
 	Window win;
-	//Pixmap icon;
-	//Pixmap mask;
+	Pixmap icon;
+	GtkImage * icon_image;
+	Pixmap mask;
 	char *name;
+	char * icon_name;
 	//int pos_x;
 	//int width;
 	//unsigned int focused:1;
 	//unsigned int iconified:1;
-	//unsigned int icon_copied:1;
+	unsigned int icon_copied:1;
+	unsigned int icon_shown:1;
 	unsigned int found_again:1;
 	GtkWidget * button;
 
@@ -78,6 +81,11 @@ found_window_again (container *tb, Window win)
 			XFree (ld->name);
 
 		ld->name = get_prop_data (ld->win, XA_WM_NAME, XA_STRING, 0);
+		//ld->icon_name = get_prop_data (ld->win, XA_WM_NAME, XA_STRING, 0);
+
+		//g_print ("%s", ld->icon_name);
+
+		//gtk_window_get_icon (gtk_window_foreign_new (ld->win));
 		
 		//list = ld;
 
@@ -118,8 +126,64 @@ void add_task_button(container * tb, GtkWidget * hbox, int nwins)
 			if (list->name && list->button)
 				gtk_container_remove (hbox, list->button);
 			
-			list->button = NULL;		
-			list->button = gtk_button_new_with_label(list->name);
+			list->button = NULL;
+			list->icon = 0;
+			list->mask =0;
+			list->icon_image = NULL;		
+			//list->button = gtk_button_new_with_label(list->name);
+			
+			list->button = gtk_button_new();
+
+			GtkWidget * bbox = gtk_hbox_new (FALSE, 0);
+
+			gtk_box_pack_start (GTK_BOX(bbox), gtk_image_new_from_file("Tango/22x22/actions/window_new.png"), FALSE, FALSE, 0);
+
+			gtk_box_pack_start (GTK_BOX(bbox), gtk_label_new(list->name), TRUE, TRUE, 0);
+
+			gtk_container_add (GTK_CONTAINER(list->button),
+					   bbox);
+		
+			//if (!list->icon_shown && list->icon_copied){
+
+			/*if (list->icon == 0 && list->icon_image ==NULL && list->win !=NULL)
+			{
+
+				XWMHints *hin;
+
+				list->icon = None;
+				list->mask = None;
+
+				hin = (XWMHints *) get_prop_data (list->win, XA_WM_HINTS, XA_WM_HINTS, 0);
+				if (hin)
+				{
+				if ((hin->flags & IconPixmapHint))
+				{
+					if ((hin->flags & IconMaskHint))
+					{
+					list->mask = hin->icon_mask;
+					}
+
+				list->icon = hin->icon_pixmap;
+				//list->icon_copied = TRUE;
+
+				list->icon_image = gtk_image_new_from_pixmap (gdk_pixmap_foreign_new (list->icon),
+								    	      NULL);
+			
+				//scale_icon (tk);
+				}
+				XFree (hin);
+			}
+			}
+			
+			if (list->icon_image && list->button !=NULL && list->win !=NULL){
+				
+			
+				gtk_container_add (GTK_CONTAINER(list->button),
+						   GTK_WIDGET(list->icon_image));
+			
+				list->icon_shown = TRUE;
+			}							
+			//}*/
 		
 			gtk_widget_set_size_request (list->button, 
 						    (hbox->allocation.width/nwins)
