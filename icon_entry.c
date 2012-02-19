@@ -12,6 +12,8 @@ struct TASKMM_ICONS{
 	char tooltip[256];
 	GtkWidget * image_widget;
 	int saturation;
+	GdkPixbuf *normal_pix;
+	GdkPixbuf *hover_pix;
 
 };
 
@@ -48,23 +50,13 @@ gboolean draw_icons 		(GtkWidget            *widget,
   
   	applet_background (cr, width, height);
 
-	// TODO: remove seeking disk for image on every expose event
+	//GdkPixbuf *pixbuf =	gdk_pixbuf_new_from_file_at_size((char*)data->path_to_icon, (4/3)*(BAR_HEIGHT-PADDING*2), BAR_HEIGHT-PADDING*2, NULL);
 
-	GdkPixbuf *pixbuf =	gdk_pixbuf_new_from_file_at_size((char*)data->path_to_icon, (4/3)*(BAR_HEIGHT-PADDING*2), BAR_HEIGHT-PADDING*2, NULL);
-
-	if (pixbuf == NULL)
-	{
-		g_printerr((char*)data->path_to_icon);
-		g_printerr("Failed to resize image\n");
-		cairo_destroy(cr);
-		return 1;
-	}
-
-	GdkPixbuf *dest_pixbuf = gdk_pixbuf_copy (pixbuf);
-
-	gdk_pixbuf_saturate_and_pixelate (pixbuf, dest_pixbuf, ((data->saturation)>1.0?ICON_SATURATION:1.0), FALSE);
+	cairo_set_source(cr, ((data->saturation)>1.0?data->hover_pix:data->normal_pix));
+  	//cairo_rectangle(cr, 0, 0 , width, height);
+  	cairo_fill(cr);
 	
-	gtk_image_set_from_pixbuf(GTK_IMAGE(widget), dest_pixbuf);
+	//gtk_image_set_from_pixbuf(GTK_IMAGE(widget), ((data->saturation)>1.0?data->hover_pix:data->normal_pix));
 
 	cairo_destroy(cr);
 
@@ -99,16 +91,25 @@ GtkWidget * enum_icons(void){
  	{
 		struct TASKMM_ICONS temp = icons[i];
 
-		GtkWidget *image;
     		GtkWidget *event_box;
 
-    		image = gtk_image_new_from_file (temp.path_to_icon);
+		icons[i].normal_pix = gdk_pixbuf_new_from_file_at_size((char*)icons[i].path_to_icon, 
+									(4/3)*(BAR_HEIGHT-PADDING*2), 
+									BAR_HEIGHT-PADDING*2, NULL);
+
+
+		icons[i].hover_pix = gdk_pixbuf_copy (icons[i].normal_pix);
+
+		gdk_pixbuf_saturate_and_pixelate (icons[i].normal_pix, icons[i].hover_pix, ICON_SATURATION, FALSE);
+
+    		GtkWidget *image = gtk_image_new_from_pixbuf (icons[i].normal_pix);
 
 		icons[i].image_widget = image;
 		icons[i].saturation = 1.0;
 
-		//----g_signal_connect(image, "expose-event", G_CALLBACK(draw_icons), (gpointer)&icons[i]);
-		
+#ifdef STATIC_THEME
+		g_signal_connect(image, "expose-event", G_CALLBACK(draw_icons), (gpointer)&icons[i]);
+#endif	
     		event_box = gtk_event_box_new ();
 
     		gtk_container_add (GTK_CONTAINER (event_box), image);

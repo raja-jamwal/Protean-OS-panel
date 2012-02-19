@@ -1,6 +1,8 @@
 // (c) 2012 Raja Jamwal <linux1@zoho.com>
 #include "bar.h"
 
+// NOTE Icon manager is not a applet from point of code
+
 struct APPLETS apps[] = {
 {NULL, clock_init, APPLET_TYPE_TRAY}
 //,{NULL, home_init, APPLET_TYPE_TASK} // dummy home app to show APPLET_TYPE_TASK applet type
@@ -66,12 +68,12 @@ enum_applet (void)
 	// applet container to add single applet in panel
  	GtkWidget * hbox = gtk_hbox_new(FALSE, 1);
 
-	gtk_box_pack_start (GTK_BOX(hbox), GTK_WIDGET(apps[i].applet), FALSE, FALSE, 1);
+	gtk_box_pack_start (GTK_BOX(hbox), GTK_WIDGET(apps[i].applet), TRUE, TRUE, 1);
 
 	if (temp.type == APPLET_TYPE_TRAY)
 		gtk_box_pack_start (GTK_BOX(tray), hbox, FALSE, FALSE, 1);
 	else
-		gtk_box_pack_start (GTK_BOX(taskmm), hbox, FALSE, FALSE, 1);
+		gtk_box_pack_start (GTK_BOX(taskmm), hbox, TRUE, TRUE, 1);
 
 
  }

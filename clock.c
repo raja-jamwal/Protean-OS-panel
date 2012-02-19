@@ -15,10 +15,14 @@ gboolean on_expose_clock_applet (GtkWidget      *widget,
   cr = gdk_cairo_create(widget->window);
 
   int width = widget->allocation.width, height = widget->allocation.height; 
-  
-  applet_background (cr, width, height);
 
+#ifdef STATIC_THEME  
+  applet_background (cr, width, height);
   cairo_set_source_rgb (cr, 1, 1, 1);
+#else
+  cairo_set_source_rgb (cr, 0.3, 0.3, 0.3);
+#endif
+
   cairo_select_font_face(cr, "Arial",
       			 CAIRO_FONT_SLANT_NORMAL,
       			 CAIRO_FONT_WEIGHT_BOLD);
@@ -59,10 +63,12 @@ clock_init (void)
 g_print("initializing clock applet\n");
 GtkWidget *app = gtk_drawing_area_new ();
 gtk_drawing_area_size (GTK_DRAWING_AREA(app), 0.08*width_screen, BAR_HEIGHT);
+
 gtk_signal_connect (GTK_OBJECT (app), "expose_event",
                    (GtkSignalFunc) on_expose_clock_applet, NULL);
 
- gint m_timer = g_timeout_add(1000, repaint, app);
+
+gint m_timer = g_timeout_add(1000, repaint, app);
 
 return app;
 }

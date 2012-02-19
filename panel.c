@@ -50,12 +50,16 @@ init_window(void)
  //gtk_widget_set_double_buffered( GTK_WIDGET(window), FALSE );
  /* we'll draw the background of the main window */
 
- //-----gtk_widget_set_app_paintable(window, TRUE);
+#ifdef STATIC_THEME
+ gtk_widget_set_app_paintable(window, TRUE);
+#endif
 
  /* needed for some instance, this create the DC for painting explicitly*/
  //gtk_widget_realize (GTK_WIDGET(window));
 
+#ifdef STATIC_THEME
  g_signal_connect(G_OBJECT(window), "expose-event", G_CALLBACK (on_expose_event_panel), NULL);
+#endif
 
 }
 
@@ -72,7 +76,7 @@ setup_panel(void)
  
  // logo
  GtkWidget * label = gtk_label_new (NULL);
- gtk_label_set_markup (GTK_LABEL (label), "<span font=\"arial\" font_weight=\"bold\" font_size=\"18500\" foreground=\"grey\">MeeGo</span>");
+ gtk_label_set_markup (GTK_LABEL (label), "<span font=\"arial\" font_weight=\"bold\" font_size=\"18500\" foreground=\"grey\">myOS</span>");
 
  // task manager
 

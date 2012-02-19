@@ -13,6 +13,8 @@
 #ifndef _H_PROTEAN_BAR_H
 #define _H_PROTEAN_BAR_H
 
+//#define STATIC_THEME
+
 #define BAR_HEIGHT 		30
 #define STRUT_TOP 		2
 #define STRUT_TOP_START 	8

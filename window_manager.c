@@ -1,19 +1,23 @@
+// (c) 2012 Raja Jamwal <linux1@zoho.com>
 #include "bar.h"
 
-//TODO: on 64-bit system check the back data format of xserver conversation explicitally
+//TODO: on 64-bit system check the back data format of xserver conversation explicitally [DONE]
+
+GtkWidget *hbox = NULL;
 
 typedef struct WINDOW_META{
 
 	struct win_meta *next;
 	Window win;
-	Pixmap icon;
-	Pixmap mask;
+	//Pixmap icon;
+	//Pixmap mask;
 	char *name;
-	int pos_x;
-	int width;
-	unsigned int focused:1;
-	unsigned int iconified:1;
-	unsigned int icon_copied:1;
+	//int pos_x;
+	//int width;
+	//unsigned int focused:1;
+	//unsigned int iconified:1;
+	//unsigned int icon_copied:1;
+	unsigned int found_again:1;
 	GtkWidget * button;
 
 }win_meta;
@@ -47,18 +51,18 @@ get_prop_data (Window win, Atom prop, Atom type, int *items)
 	return prop_data;
 }
 
-// Contains garbage and logic from trials
-// TODO: clean un-used logic
 
 win_meta *
-find_win (container *tb, Window win)
+found_window_again (container *tb, Window win)
 {
 	win_meta *list = (win_meta*)(tb->win_list);
 
 	while (list)
 	{
-		if (list->win == win)
+		if (list->win == win){
+			list->found_again=TRUE;
 			return list;
+		}
 		list = list->next;
 	}
 	
@@ -68,13 +72,12 @@ find_win (container *tb, Window win)
 		win_meta * ld = calloc(1, sizeof(win_meta));
 		ld->win = win;
 		ld->next = NULL;
+		ld->found_again = TRUE;
 
 		if (ld->name)
 			XFree (ld->name);
 
-		ld->name = (char*) malloc(WINDOW_NAME_LENGTH);
-		char * title = get_prop_data (ld->win, XA_WM_NAME, XA_STRING, 0);
-		memcpy (ld->name, title, WINDOW_NAME_LENGTH-4);
+		ld->name = get_prop_data (ld->win, XA_WM_NAME, XA_STRING, 0);
 		
 		//list = ld;
 
@@ -102,11 +105,11 @@ find_win (container *tb, Window win)
 	return 0;
 }
 
-void add_task_button(container * tb, GtkWidget * hbox)
+void add_task_button(container * tb, GtkWidget * hbox, int nwins)
 {
 	win_meta *list = tb->win_list;
 
-	//gtk_box_pack_start (GTK_BOX(hbox), label, FALSE, FALSE, 5);
+	// make sure to free widgets memory from previous calls
 
 	while (list)
 	{
@@ -117,9 +120,13 @@ void add_task_button(container * tb, GtkWidget * hbox)
 			
 			list->button = NULL;		
 			list->button = gtk_button_new_with_label(list->name);
+		
+			gtk_widget_set_size_request (list->button, 
+						    (hbox->allocation.width/nwins)
+						    , list->button->allocation.height);
 
 			if (list->button)
-				gtk_box_pack_start (GTK_BOX(hbox), list->button, FALSE, FALSE, 1);
+				gtk_box_pack_start (GTK_BOX(hbox), list->button, FALSE, TRUE, 0);
 		}		
 		list = list->next;
 	}
@@ -128,9 +135,62 @@ void add_task_button(container * tb, GtkWidget * hbox)
 
 }
 
+void * remove_old_window (container *tb)
+{
+	win_meta *list = tb->win_list;
+
+	while (list)
+	{
+		win_meta *even_next = (win_meta*) list->next;
+	
+		if (even_next){
+			if (even_next->found_again == FALSE){
+			// delete the button
+			if (even_next->name && even_next->button)
+				gtk_container_remove (hbox, even_next->button);
+			
+			even_next->button = NULL;
+
+			list->next = (win_meta*) even_next->next;
+			return;
+			}
+		}
+	
+		list = list->next;
+	}
+
+	return 0;
+}
+
+int total_window (container *tb)
+{
+	
+	win_meta *list = tb->win_list;
+
+	int nwins = 0;
+
+	while (list)
+	{
+		nwins++;
+	
+		list = list->next;
+	}
+
+	return nwins;
+
+}
 
 void handle_property_notify (Window win, Atom at, GtkWidget * datai)
 {
+
+	win_meta *list = all_wins->win_list;
+
+	while (list)
+	{
+		list->found_again = FALSE;
+		
+		list = list->next;
+	}
 
 	Window root_win = gdk_x11_get_default_root_xwindow ();
 
@@ -158,7 +218,7 @@ void handle_property_notify (Window win, Atom at, GtkWidget * datai)
         {
                 // success - we have data: Format should always be 32:
                 // cast to proper format, and iterate through values:
-                int *array = (int*) data;
+                guint32 *array = (guint32*) data;
 
 		int k;
                 for ( k = 0; k < numItems; k++)
@@ -166,13 +226,15 @@ void handle_property_notify (Window win, Atom at, GtkWidget * datai)
                         // get window Id:
                         Window w = (Window) array[k];
 
-                        find_win (all_wins, w);
+                        found_window_again (all_wins, w);
 		
                 }
                 XFree(data);
         }
+	
+	remove_old_window (all_wins);
 
-	add_task_button (all_wins, datai);
+	add_task_button (all_wins, datai, total_window(all_wins));
 
 	
 }
@@ -215,7 +277,7 @@ window_manager_init (void)
 
 	all_wins = calloc(1, sizeof(container));
 
-	GtkWidget *hbox = gtk_hbox_new(FALSE, 0);
+	hbox = gtk_hbox_new(FALSE, 0);
 
 	Window root_win = gdk_x11_get_default_root_xwindow ();
 
