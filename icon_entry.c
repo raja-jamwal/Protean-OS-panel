@@ -76,7 +76,6 @@ gboolean draw_hover_icons_leave  (GtkWidget           *widget,
 {data->saturation = 1.0;return FALSE;}
 
 
-
 GtkWidget * enum_icons(void){
 
  	// icons container

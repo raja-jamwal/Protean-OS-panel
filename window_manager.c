@@ -3,6 +3,24 @@
 
 //TODO: on 64-bit system check the back data format of xserver conversation explicitally [DONE]
 
+#define WIN_STATE_STICKY          (1<<0)	/* everyone knows sticky */
+#define WIN_STATE_MINIMIZED       (1<<1)	/* ??? */
+#define WIN_STATE_MAXIMIZED_VERT  (1<<2)	/* window in maximized V state */
+#define WIN_STATE_MAXIMIZED_HORIZ (1<<3)	/* window in maximized H state */
+#define WIN_STATE_HIDDEN          (1<<4)	/* not on taskbar but window visible */
+#define WIN_STATE_SHADED          (1<<5)	/* shaded (NeXT style) */
+#define WIN_STATE_HID_WORKSPACE   (1<<6)	/* not on current desktop */
+#define WIN_STATE_HID_TRANSIENT   (1<<7)	/* owner of transient is hidden */
+#define WIN_STATE_FIXED_POSITION  (1<<8)	/* window is fixed in position even */
+#define WIN_STATE_ARRANGE_IGNORE  (1<<9)	/* ignore for auto arranging */
+
+#define WIN_HINTS_SKIP_FOCUS      (1<<0)	/* "alt-tab" skips this win */
+#define WIN_HINTS_SKIP_WINLIST    (1<<1)	/* not in win list */
+#define WIN_HINTS_SKIP_TASKBAR    (1<<2)	/* not on taskbar */
+#define WIN_HINTS_GROUP_TRANSIENT (1<<3)	/* ??????? */
+#define WIN_HINTS_FOCUS_ON_CLICK  (1<<4)	/* app only accepts focus when clicked */
+#define WIN_HINTS_DO_NOT_COVER    (1<<5)	/* attempt to not cover this window */
+
 GtkWidget *hbox = NULL;
 
 typedef struct WINDOW_META{
@@ -16,12 +34,13 @@ typedef struct WINDOW_META{
 	char * icon_name;
 	//int pos_x;
 	//int width;
-	//unsigned int focused:1;
-	//unsigned int iconified:1;
+	unsigned int focused:1;
+	unsigned int iconified:1;
 	unsigned int icon_copied:1;
 	unsigned int icon_shown:1;
 	unsigned int found_again:1;
 	GtkWidget * button;
+	int button_handler_id;
 
 }win_meta;
 
@@ -55,6 +74,56 @@ get_prop_data (Window win, Atom prop, Atom type, int *items)
 }
 
 
+int
+is_hidden (Window win)
+{
+	unsigned long *data;
+	int ret = 0;
+
+	data = get_prop_data (win, "_WIN_HINTS", XA_CARDINAL, 0);
+	if (data)
+	{
+		if ((*data) & WIN_HINTS_SKIP_TASKBAR)
+			ret = 1;
+		XFree (data);
+	}
+
+	return ret;
+}
+
+
+int
+is_focused (Window win)
+{
+	// Find the window which has the current keyboard focus.
+   	Window winFocus;
+   	int    revert;
+   	XGetInputFocus(gdk_x11_get_default_xdisplay(), &winFocus, &revert);
+	
+	if (win != winFocus) return FALSE;
+	
+	return TRUE;
+}
+
+
+int
+is_iconified (Window win)
+{
+	unsigned long *data;
+	int ret = FALSE;
+
+	Atom xa_wm_state = XInternAtom(gdk_x11_get_default_xdisplay(), "WM_STATE" , FALSE);
+
+	data = get_prop_data (win, xa_wm_state, xa_wm_state, 0);
+	if (data)
+	{
+		if (data[0] == IconicState)
+			ret = TRUE;
+		XFree (data);
+	}
+	return ret;
+}
+
 win_meta *
 found_window_again (container *tb, Window win)
 {
@@ -76,6 +145,8 @@ found_window_again (container *tb, Window win)
 		ld->win = win;
 		ld->next = NULL;
 		ld->found_again = TRUE;
+		ld->iconified = is_iconified (win);
+		ld->focused = is_focused (win);
 
 		if (ld->name)
 			XFree (ld->name);
@@ -113,6 +184,53 @@ found_window_again (container *tb, Window win)
 	return 0;
 }
 
+void 
+task_click	(GtkWidget *widget,
+                 gpointer   data )
+{
+	win_meta * list = data;
+
+	Display * dd = gdk_x11_get_default_xdisplay();
+		
+	g_print("called");
+
+	if (list->iconified == TRUE)
+	{
+			list->iconified = FALSE;
+			list->focused = TRUE;
+			XMapWindow (dd, list->win);
+				
+			g_print("was iconified");
+	} else
+		{
+			if (list->focused == TRUE)
+			{
+			list->iconified = TRUE;
+			list->focused = FALSE;
+			XIconifyWindow (dd, list->win, DefaultScreen (dd));
+			g_print("Was focused");
+			}else
+			{
+			
+			list->iconified = FALSE;
+			list->focused = TRUE;
+			//XMapWindow (dd, list->win);
+
+			
+			XRaiseWindow (dd, list->win);
+			XMapWindow (dd, list->win);
+			g_print("raising");
+			//XSetInputFocus (dd, list->win, RevertToParent, CurrentTime);
+			XFlush(dd);
+			XSync (dd, False);
+			}
+	}
+	XFlush(dd);
+	XSync (dd, False);
+
+	//g_print ("Hello again - %s was pressed\n", (char *) list->name);
+}
+
 void add_task_button(container * tb, GtkWidget * hbox, int nwins)
 {
 	win_meta *list = tb->win_list;
@@ -131,6 +249,9 @@ void add_task_button(container * tb, GtkWidget * hbox, int nwins)
 			list->mask =0;
 			list->icon_image = NULL;		
 			//list->button = gtk_button_new_with_label(list->name);
+
+			/*if (list->button_handler_id)
+				g_signal_handler_disconnect (list->button, list->button_handler_id);*/
 			
 			list->button = gtk_button_new();
 
@@ -142,6 +263,9 @@ void add_task_button(container * tb, GtkWidget * hbox, int nwins)
 
 			gtk_container_add (GTK_CONTAINER(list->button),
 					   bbox);
+
+			list->button_handler_id = gtk_signal_connect (GTK_OBJECT (list->button), "clicked",
+                        		    GTK_SIGNAL_FUNC (task_click), (gpointer) list);
 		
 			//if (!list->icon_shown && list->icon_copied){
 
