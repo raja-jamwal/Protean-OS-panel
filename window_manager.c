@@ -184,6 +184,66 @@ found_window_again (container *tb, Window win)
 	return 0;
 }
 
+// BUG: we never get click events on task button, once xsendevent is issued, either from us or from any other applciation
+void
+window_activate (Display * dd, Window wid) 
+{
+  int ret;
+  XEvent xev;
+  XWindowAttributes wattr;
+
+  memset(&xev, 0, sizeof(xev));
+  xev.type = ClientMessage;
+  xev.xclient.display = dd;
+  xev.xclient.window = wid;
+  xev.xclient.message_type = XInternAtom(dd, "_NET_ACTIVE_WINDOW", False);
+  xev.xclient.format = 32;
+  xev.xclient.data.l[0] = 2L; /* 2 == Message from a window pager */
+  xev.xclient.data.l[1] = CurrentTime;
+
+  XGetWindowAttributes(dd, wid, &wattr);
+  ret = XSendEvent(dd, wattr.screen->root, False,
+                   SubstructureNotifyMask | SubstructureRedirectMask,
+                   &xev);
+
+  XSync (dd, False);
+  XFlush(dd);
+}
+
+void
+window_focus(Display * dd, Window * window)
+{
+
+  int ret = 0;
+  int unused_revert_ret;
+
+  ret = XGetInputFocus(dd, window, &unused_revert_ret);
+
+}
+
+void
+window_map(Display * dd, Window wid)
+{
+  int ret = 0;
+  ret = XMapWindow(dd, wid);
+  XFlush(dd);
+}
+
+void
+window_minimize(Display * dd, Window window) 
+{
+  int ret;
+  int screen;
+
+  /* Get screen number */
+  XWindowAttributes attr;
+  XGetWindowAttributes(dd, window, &attr);
+  screen = XScreenNumberOfScreen(attr.screen);
+
+  /* Minimize it */
+  ret = XIconifyWindow(dd, window, screen);
+}
+
 void 
 task_click	(GtkWidget *widget,
                  gpointer   data )
@@ -198,7 +258,9 @@ task_click	(GtkWidget *widget,
 	{
 			list->iconified = FALSE;
 			list->focused = TRUE;
-			XMapWindow (dd, list->win);
+			window_map (dd, list->win);
+			//XMapWindow (dd, list->win);
+			window_focus (dd, &(list->win));
 				
 			g_print("was iconified");
 	} else
@@ -207,7 +269,7 @@ task_click	(GtkWidget *widget,
 			{
 			list->iconified = TRUE;
 			list->focused = FALSE;
-			XIconifyWindow (dd, list->win, DefaultScreen (dd));
+			window_minimize (dd, (list->win));
 			g_print("Was focused");
 			}else
 			{
@@ -215,14 +277,14 @@ task_click	(GtkWidget *widget,
 			list->iconified = FALSE;
 			list->focused = TRUE;
 			//XMapWindow (dd, list->win);
-
+			window_focus (dd, &(list->win));
 			
-			XRaiseWindow (dd, list->win);
-			XMapWindow (dd, list->win);
+			//XRaiseWindow (dd, list->win); // not doing
+			//XMapWindow (dd, list->win);
 			g_print("raising");
 			//XSetInputFocus (dd, list->win, RevertToParent, CurrentTime);
-			XFlush(dd);
-			XSync (dd, False);
+			//XFlush(dd);
+			//XSync (dd, False);
 			}
 	}
 	XFlush(dd);
@@ -440,6 +502,7 @@ event_filter_func  (GdkXEvent *xevent,
 			case DestroyNotify:
 				//del_task (tb, ev.xdestroywindow.window);
 				/* fall through */
+				break;
 			case Expose:
 				//gui_draw_taskbar (tb);
 				break;
